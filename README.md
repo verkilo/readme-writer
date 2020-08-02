@@ -27,5 +27,4 @@ jobs:
         uses: docker://merovex/pandoc-book-readme:latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO_NAME: <NAME OF YOUR REPOSITORY HERE>
 ```
