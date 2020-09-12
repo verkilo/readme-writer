@@ -10,13 +10,16 @@ YAML_FRONT_MATTER_REGEXP = %r{\A(---\s*\n.*?\n?)^((---|\.\.\.)\s*$\n?)}m
 SECTION_REGEXP = %r{<!-- (.*?) -->(.*?)<!-- \/\1 -->}m
 
 template_file = (ENV["TEMPLATE_FILE"]) ? ENV["TEMPLATE_FILE"] : "./.verkilo/templates/README.liquid"
-output_file   = (ENV["OUTPUT_FILE"]) ? ENV["OUTPUT_FILE"] : "./README.md"
-repo_name     = (ENV["REPO_NAME"]) ? ENV["REPO_NAME"] : "./README.md"
+output_file   = (ENV["OUTPUT_FILE"])   ? ENV["OUTPUT_FILE"]   : "./README.md"
+repo_name     = (ENV["GITHUB_REPOSITORY"]) ? ENV["GITHUB_REPOSITORY"]     : ""
+Liquid::Template.file_system = Liquid::LocalFileSystem.new(File.dirname(template_file))
 
 puts "Template uses: #{template_file}"
 puts "Writing to:    #{output_file}"
 
-@template = Liquid::Template.parse(File.read(template_file))
+content = File.read(template_file)
+@template = Liquid::Template.parse(content)
+
 @data = {
   'time' => Time.now.strftime("%F %R %Z"),
   'repo_name' => repo_name
@@ -34,8 +37,10 @@ mkd_files.each do |mdfile|
 
   # We are finding fenced content...
   if mkd_contents.match(SECTION_REGEXP)
-    puts ".. '#{$1}' (#{File.basename(mdfile)})" if ENV["DEBUG"]
-    @data[$1] = "<!-- #{$1} -->\n#{$2.strip}\n[Read more](#{mdfile})\n<!-- /#{$1} -->"
+    f = $2
+    type = $1.gsub('-','_')
+    puts ".. '#{type}' (#{File.basename(mdfile)})" if ENV["DEBUG"]
+    @data[type] = "<!-- #{type} -->\n#{f.strip}\n[Read more](#{mdfile})\n<!-- /#{type} -->"
     next
   end
 
@@ -43,7 +48,7 @@ mkd_files.each do |mdfile|
   if mkd_contents.match(YAML_FRONT_MATTER_REGEXP)
     data = YAML.load($1)
     next unless data.keys.include?('type')
-    type = data['type']
+    type = (data['type'].gsub('-','_') + "s").gsub(/(?<=[s|sh|ch|x|z])s$$/,'es')
     puts ".. '#{type}' in (#{File.basename(mdfile)})" if ENV["DEBUG"]
     @data[type] = Array(@data[type]).push( data.merge({ "filename" => mdfile }) )
   end
@@ -63,5 +68,8 @@ puts "\nCreating Table of Contents"
   "%s* [%s](#%s)\n" % [indent,header,anchor]
 end.join
 
-File.open(output_file,'w').write(@template.render( @data ))
+output = @template.render( @data )
+output.gsub!(/\n{2,}/m,"\n\n")
+File.open(output_file,'w').write(output)
+puts @template.errors
 puts "Done."

@@ -1,30 +1,44 @@
-# Pandoc Book Readme (Docker)
+# Readme Writer Bot
 
-<!-- pandoc-book-readme -->
-**Pandoc Book Readme** is a Docker container that auto-generates a compound README from Markdown files within the repository. It looks for all content between two comment tags, then inserts them in a README based on a template. (docker://merovex/pandoc-book-readme:latest)
-<!-- /pandoc-book-readme -->
+<!-- readme-writer-readme -->
+**Readme Writer** is a Docker container that auto-generates a compound README from Markdown files within the repository. It looks for all content between two comment tags, then inserts them in a README based on a template using the [Liquid template language](https://shopify.github.io/liquid/). (docker://merovex/readme-writer:latest)
+<!-- /readme-writer-readme -->
 
 ## Configuration
 
 The following Github Action workflow should be added. Your repository name needs to be added
 
 ```
-# Name: Maintain Version (Tagging)
+# Name: Compile Readme
 #
-# Description: This Github Action runs monthly to ensure there is a git tag associated
-# with the version methodology (vYY.MM) where YY is the last two digits of the year
-# and MM is the two-digit month.
+# Description: This Github Action runs on each push to dynamically build
+# the repository's README based on the template and other Markdown files
+# In the repository.
 # =================================================
-on: [push]
-name: Compile Readme (push)
+# on: [push]
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+
+name: Compile Readme
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v1
+      - name: Get repo
+        uses: actions/checkout@master
+        with:
+          ref: master
       - name: Compile
-        uses: docker://merovex/pandoc-book-readme:latest
+        uses: docker://merovex/readme-writer:latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit on change
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "@verkilo rewrote README"
+
 ```

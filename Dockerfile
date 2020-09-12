@@ -1,13 +1,12 @@
-#FROM ubuntu:latest
 FROM ruby:latest
-MAINTAINER Ben Wilson <ben@merovex.com>
+LABEL maintainer="Ben Wilson <ben@merovex.com>"
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV DEBIAN_PRIORITY critical
 ENV DEBCONF_NOWARNINGS yes
 
 RUN apt-get update -q \
-    && apt-get install -qy
+    && apt-get install -qy \
       locales
 
 RUN rm -rf /var/lib/apt/lists/*
@@ -21,8 +20,7 @@ ENV LC_ALL en_US.UTF-8
 
 RUN gem install liquid
 
-COPY entrypoint.rb /entrypoint.rb
+COPY compile.rb /compile.rb
 COPY README.liquid /README.liquid
-# CD /
 
-ENTRYPOINT ["/entrypoint.rb"]
+ENTRYPOINT ["/compile.rb"]
