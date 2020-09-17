@@ -46,11 +46,16 @@ mkd_files.each do |mdfile|
 
   # We are finding YAML content with a 'type'...
   if mkd_contents.match(YAML_FRONT_MATTER_REGEXP)
-    data = YAML.load($1)
-    next unless data.keys.include?('type')
-    type = (data['type'].gsub('-','_') + "s").gsub(/(?<=[s|sh|ch|x|z])s$$/,'es')
-    puts ".. '#{type}' in (#{File.basename(mdfile)})" if ENV["DEBUG"]
-    @data[type] = Array(@data[type]).push( data.merge({ "filename" => mdfile }) )
+    begin
+      data = YAML.load($1)
+      next unless data.keys.include?('type')
+      type = (data['type'].gsub('-','_') + "s").gsub(/(?<=[s|sh|ch|x|z])s$$/,'es')
+      puts ".. '#{type}' in (#{File.basename(mdfile)})" if ENV["DEBUG"]
+      @data[type] = Array(@data[type]).push( data.merge({ "filename" => mdfile }) )
+    rescue StandardError => e
+      puts "YAML Error: #{mdfile}"
+      puts "Rescued: #{e.inspect}"
+    end
   end
 end
 
